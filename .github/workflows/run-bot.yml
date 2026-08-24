@@ -1,0 +1,28 @@
+name: Run FNLB Bot 24/7
+
+on:
+  schedule:
+    - cron: '0 */4 * * *' # Automatically restarts every 4 hours to bypass GitHub's 6-hour job limit
+  workflow_dispatch: # Allows you to start it manually
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Execute FNLB Core Cluster
+        env:
+          FNLB_API_TOKEN: ${{ secrets.FNLB_API_TOKEN }}
+          # If your bot requires other keys from your .env.example, add them here exactly like this:
+          # ACCOUNT_EMAIL: ${{ secrets.ACCOUNT_EMAIL }}
+        run: npm run start
