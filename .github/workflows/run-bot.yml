@@ -2,25 +2,26 @@ name: Run FNLB Bot 24/7
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # Automatically restarts every 4 hours to bypass GitHub's 6-hour job limit
-  workflow_dispatch: # Allows you to start it manually
+    - cron: '0 */4 * * *' # Auto-restarts every 4 hours to clear GitHub's background timeouts
+  workflow_dispatch: # Allows manual panel execution
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository code
+      - name: Checkout Repository Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Environment
-        uses: actions/setup-node@v4
+      - name: Setup Bun JavaScript Engine
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
+          bun-version: latest
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Project Dependencies via Bun
+        run: bun install
 
-      - name: Execute FNLB Core Cluster
+      - name: Launch FNLB Cluster Node
         env:
           FNLB_API_TOKEN: ${{ secrets.FNLB_API_TOKEN }}
-        run: npm run start
+          API_TOKEN: ${{ secrets.FNLB_API_TOKEN }} # Direct fallback mapping for cluster variables
+        run: bun run start
