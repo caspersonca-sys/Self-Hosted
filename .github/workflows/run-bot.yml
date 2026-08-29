@@ -8,6 +8,11 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    # Prevents multiple cron instances from running simultaneously and breaking your bot session
+    concurrency:
+      group: fnlb-bot-session
+      cancel-in-progress: true
+
     steps:
       - name: Checkout Repository Code
         uses: actions/checkout@v4
@@ -24,4 +29,5 @@ jobs:
         env:
           FNLB_API_TOKEN: ${{ secrets.FNLB_API_TOKEN }}
           API_TOKEN: ${{ secrets.FNLB_API_TOKEN }} # Direct fallback mapping for cluster variables
-        run: bun run start
+        # 'timeout 14100s' cleanly terminates the Bun process after 3 hours and 55 minutes
+        run: timeout 14100s bun run start || echo "Bot step reached scheduled rotation timeout. Restarting clean on next cycle."
