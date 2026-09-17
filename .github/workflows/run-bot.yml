@@ -1,17 +1,16 @@
 name: Run FNLB Bot 24/7
 
 on:
-  schedule:
-    - cron: '0 */4 * * *' # Auto-restarts every 4 hours to clear GitHub's background timeouts
-  workflow_dispatch: # Allows manual panel execution
+  workflow_dispatch: # Allows manual execution and self-triggering loops
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    # Prevents multiple cron instances from running simultaneously and breaking your bot session
+    
+    # Ensures only one instance runs at a time if triggered manually during a run
     concurrency:
       group: fnlb-bot-session
-      cancel-in-progress: true
+      cancel-in-progress: false # Set to false so the next run waits or chains perfectly
 
     steps:
       - name: Checkout Repository Code
@@ -28,6 +27,14 @@ jobs:
       - name: Launch FNLB Cluster Node
         env:
           FNLB_API_TOKEN: ${{ secrets.FNLB_API_TOKEN }}
-          API_TOKEN: ${{ secrets.FNLB_API_TOKEN }} # Direct fallback mapping for cluster variables
-        # 'timeout 14100s' cleanly terminates the Bun process after 3 hours and 55 minutes
-        run: timeout 14100s bun run start || echo "Bot step reached scheduled rotation timeout. Restarting clean on next cycle."
+          API_TOKEN: ${{ secrets.FNLB_API_TOKEN }} 
+        # Keeps the bot running for 5 hours and 50 minutes (21000s), just under GitHub's 6-hour limit
+        run: timeout 21000s bun run start || echo "Bot step reached scheduled rotation timeout."
+
+      - name: Trigger Next Cycle Instantly
+        if: always() # Ensures the bot triggers the next run even if it crashes or errors out
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Launching next 24/7 cluster cycle..."
+          gh workflow run "Run FNLB Bot 24/7" --ref ${{ github.ref_name }}
